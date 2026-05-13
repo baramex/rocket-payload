@@ -10,8 +10,8 @@ const Servo rightMotor;
 const Servo leftMotor;
 const byte defaultRightMotor = 128;
 const byte defaultLeftMotor = 128;
-const byte rolledPosition = 255;
-const byte unrolledPosition = 0;
+const byte rolledPosition = 183;
+const byte unrolledPosition = 73;
 const byte downPosition = 200;
 const byte upPosition = 50;
 const byte servoDelay = 30;
@@ -120,7 +120,7 @@ void setup() {
   }
   LoRa.enableCrc();
   LoRa.setSyncWord(0xD5);
-  LoRa.setTxPower(20);
+  //LoRa.setTxPower(20);
 
   // GPS
   GpsSerial.begin(GPSBaud);
@@ -144,11 +144,11 @@ void loop() {
 
   if ((now - lastTransmit) >= transmitDelay) {
     checkVerticalSpeed(now);
-    transmitToRC(now);
+    //transmitToRC(now);
     lastTransmit = now;
   }
 
-  const unsigned packetSize = LoRa.parsePacket(2);
+  const unsigned packetSize = LoRa.parsePacket();
   if (packetSize) {
     if (receiveFromRC()) {
       //Serial.println("Receive " + String(now - lastSignal));
@@ -274,11 +274,14 @@ void updateServos() {
 
 bool receiveFromRC() {
   if (LoRa.read() != 0xC4) return false;
-  const byte rcData = LoRa.read();
+  /*const byte rcData = LoRa.read();
   mode = rcData & 0b1;
-  direction = rcData >> 1;
+  direction = rcData >> 1;*/
+  mode = LoRa.parseInt();
+  direction = LoRa.parseInt();
 
   rssi = LoRa.packetRssi();
+  Serial.println(rssi);
 
   return true;
 }
@@ -309,7 +312,7 @@ float initialiseAlt() {
   float lastAlt;
   for (uint8_t i = 0; i < 10; i++) {
     const float currAlt = getAltitude();
-    if (abs(lastAlt - currAlt) <= 1) {
+    if (abs(lastAlt - currAlt) <= 1.0f) {
       return currAlt;
     }
     lastAlt = currAlt;
@@ -359,24 +362,24 @@ void checkVerticalSpeed(const unsigned long& now) {
   altitude = getAltitude();
 
   if (apogeeTime) {
-    if (altitude - startAlt <= 300 || now - apogeeTime >= apogeeDelay) {
+    if (altitude - startAlt <= 300.0f || now - apogeeTime >= apogeeDelay) {
       state = GLIDING;
     }
     return;
   }
 
   if (state == READY || state == PREPARING) {
-    if (vz > 5 || altitude - startAlt > 20) {
+    if (vz > 5.0f || altitude - startAlt > 20.0f) {
       state = TAKINGOFF;
     }
 
-    if (vz < -5) {
+    if (vz < -5.0f) {
       apogeeTime = now;
     }
   }
 
   if (state == TAKINGOFF) {
-    if (vz < -0.1) {
+    if (vz < -0.1f) {
       apogeeTime = now;
     }
   }
@@ -407,7 +410,7 @@ void parseGpsData() {
   ltemp += mm / 60.0f;
   GpsSerial.read();  // ","
   if (GpsSerial.read() == 'S') ltemp = -ltemp;
-  if (latitude && abs(latitude - ltemp) > 0.4) return;  // Corrupt data detection
+  if (latitude && abs(latitude - ltemp) > 0.4f) return;  // Corrupt data detection
   latitude = ltemp;
 
   if (!skipUntil(GpsSerial, ',')) return;
@@ -420,7 +423,7 @@ void parseGpsData() {
   if (!ltemp) return;
   GpsSerial.read();  // ","
   if (GpsSerial.read() == 'W') ltemp = -ltemp;
-  if (longitude && abs(longitude - ltemp) > 0.4) return;  // Corrupt data detection
+  if (longitude && abs(longitude - ltemp) > 0.4f) return;  // Corrupt data detection
   longitude = ltemp;
 
   if (state == PREPARING) state = READY;
