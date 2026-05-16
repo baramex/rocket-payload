@@ -123,7 +123,7 @@ void setup() {
   //LoRa.setTxPower(20);
 
   // GPS
-  GpsSerial.begin(GPSBaud);
+  //GpsSerial.begin(GPSBaud);
 
   // LED
   pinMode(ledPin, OUTPUT);
@@ -151,6 +151,7 @@ void loop() {
   const unsigned packetSize = LoRa.parsePacket();
   if (packetSize) {
     if (receiveFromRC()) {
+      if (state == PREPARING) state = READY;
       //Serial.println("Receive " + String(now - lastSignal));
       lastSignal = now;
     }
@@ -183,9 +184,9 @@ void loop() {
     killSwitch = false;
   }
 
-  if (GpsSerial.available() > 0) {
+  /*if (GpsSerial.available() > 0) {
     parseGpsData();
-  }
+  }*/
 }
 
 int readInt(const Stream& str, const uint8_t length) {
@@ -281,7 +282,7 @@ bool receiveFromRC() {
   direction = LoRa.parseInt();
 
   rssi = LoRa.packetRssi();
-  Serial.println(rssi);
+  //Serial.println(rssi);
 
   return true;
 }
